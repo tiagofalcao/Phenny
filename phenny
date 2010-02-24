@@ -14,7 +14,6 @@ Then run ./phenny again
 import sys, os, imp, optparse
 from textwrap import dedent as trim
 
-dotdir = os.path.expanduser('~/.phenny')
 
 def check_python_version():
     if sys.version_info < (2, 4):
@@ -57,74 +56,60 @@ def create_default_config(fn):
     """)
     f.close()
 
-def create_dotdir(dotdir):
-    print 'Creating a config directory at ~/.phenny...'
-    try: os.mkdir(dotdir)
+def create_config_dir(config_dir):
+    print 'Creating a config directory at %s...' % config_dir
+    try: os.mkdir(config_dir)
     except Exception, e:
-        print >> sys.stderr, 'There was a problem creating %s:' % dotdir
+        print >> sys.stderr, 'There was a problem creating %s:' % config_dir
         print >> sys.stderr, e.__class__, str(e)
         print >> sys.stderr, 'Please fix this and then run phenny again.'
         sys.exit(1)
 
-    print 'Creating a default config file at ~/.phenny/default.py...'
-    default = os.path.join(dotdir, 'default.py')
+    print 'Creating a default config file at %s/default.py...' % config_dir
+    default = os.path.join(config_dir, 'default.py')
     create_default_config(default)
 
     print 'Done; now you can edit default.py, and run phenny! Enjoy.'
     sys.exit(0)
 
-def check_dotdir():
-    if not os.path.isdir(dotdir):
-        create_dotdir(dotdir)
+def check_config_dir(config_dir):
+    if not os.path.isdir(config_dir):
+        create_config_dir(config_dir)
 
-def config_names(config):
-    config = config or 'default'
-
-    def files(d):
-        names = os.listdir(d)
-        return list(os.path.join(d, fn) for fn in names if fn.endswith('.py'))
-
-    here = os.path.join('.', config)
-    if os.path.isfile(here):
-        return [here]
-    if os.path.isfile(here + '.py'):
-        return [here + '.py']
-    if os.path.isdir(here):
-        return files(here)
-
-    there = os.path.join(dotdir, config)
-    if os.path.isfile(there):
-        return [there]
-    if os.path.isfile(there + '.py'):
-        return [there + '.py']
-    if os.path.isdir(there):
-        return files(there)
-
-    print >> sys.stderr, "Error: Couldn't find a config file!"
-    print >> sys.stderr, 'What happened to ~/.phenny/default.py?'
-    sys.exit(1)
+def config_names(config_dir):
+    names = os.listdir(config_dir)
+    return list(os.path.join(config_dir, fn) for fn in names if fn.endswith('.py'))
 
 def main(argv=None):
     # Step One: Parse The Command Line
 
     parser = optparse.OptionParser('%prog [options]')
     parser.add_option('-c', '--config', metavar='fn',
-        help='use this configuration file or directory')
+        help='use this configuration directory')
     opts, args = parser.parse_args(argv)
     if args: print >> sys.stderr, 'Warning: ignoring spurious arguments'
+
+    config_dir = os.path.expanduser('~/.phenny')
+    if opts.config:
+        config_dir = os.path.expanduser(opts.config)
+        config_dir = os.path.abspath(config_dir)
 
     # Step Two: Check Dependencies
 
     check_python_version() # require python2.4 or later
-    check_dotdir() # require ~/.phenny, or make it and exit
+    check_config_dir(config_dir) # require ~/.phenny, or make it and exit
 
     # Step Three: Load The Configurations
 
     config_modules = []
-    for config_name in config_names(opts.config):
-        name = os.path.basename(config_name).split('.')[0] + '_config'
+    for config_name in config_names(config_dir):
+        name = os.path.basename(config_name).rsplit('.')[0] + '_config'
         module = imp.load_source(name, config_name)
         module.filename = config_name
+        module.datadir = config_name.rsplit('.')[0] + "_data"
+
+        if not os.path.isdir(module.datadir):
+            os.mkdir(module.datadir)
 
         if not hasattr(module, 'prefix'):
             module.prefix = r'\.'
