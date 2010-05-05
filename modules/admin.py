@@ -12,11 +12,11 @@ def join(phenny, input):
     # Can only be done in privmsg by an admin
     if input.sender.startswith('#'): return
     if input.admin:
-        channel, key = input.group(1), input.group(2)
+        channel, key = input.group(2), input.group(3)
         if not key:
             phenny.write(['JOIN'], channel)
         else: phenny.write(['JOIN', channel, key])
-join.rule = r'\.join (#\S+)(?: *(\S+))?'
+join.rule = (['join'], r'(#\S+)(?: *(\S+))?')
 join.priority = 'low'
 join.example = '.join #example or .join #example key'
 
