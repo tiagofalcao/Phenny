@@ -9,15 +9,17 @@ http://inamidst.com/phenny/
 
 def doc(phenny, input):
     """Shows a command's documentation, and possibly an example."""
-    name = input.group(1)
+    name = input.group(2)
+    if not name:
+        help(phenny, input)
+        return
     name = name.lower()
-
     if phenny.doc.has_key(name):
         phenny.reply(phenny.doc[name][0])
         if phenny.doc[name][1]:
             phenny.say('e.g. ' + phenny.doc[name][1])
-doc.rule = ('$nick', '(?i)(?:help|doc) +([A-Za-z]+)(?:\?+)?$')
-doc.example = '$nickname: doc tell?'
+doc.rule = (['doc', 'help'], r'(\S+)')
+doc.example = '.doc tell'
 doc.priority = 'low'
 
 def commands(phenny, input):
