@@ -15,7 +15,8 @@ def doc(phenny, input):
         return
     name = name.lower()
     if phenny.doc.has_key(name):
-        phenny.reply(phenny.doc[name][0])
+	for line in phenny.doc[name][0].splitlines():
+            phenny.reply(line)
         if phenny.doc[name][1]:
             phenny.say('e.g. ' + phenny.doc[name][1])
 doc.rule = (['doc', 'help'], r'(\S+)')
